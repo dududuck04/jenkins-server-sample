@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# 사용자 변수 설정
+USER_NAME=ubuntu
+
+mkdir -p /home/ubuntu/jenkins/jenkins_home
+chown -R ubuntu:ubuntu /home/ubuntu/jenkins
+
+# Docker 설치
+echo "1. [docker program installation] start"
+apt-get update -y && apt-get upgrade -y
+
+curl -fsSL https://get.docker.com -o get-docker.sh
+sh get-docker.sh
+usermod -aG docker ${USER_NAME}
+
+# Docker 서비스 활성화 및 시작
+systemctl enable docker
+systemctl start docker
+
+# Jenkins Docker 컨테이너 실행
+docker run -d -p 80:8080 -p 50000:50000 \
+  --name jenkins \
+  -v /home/ubuntu/jenkins/jenkins_home:/var/jenkins_home \
+  jenkins/jenkins:jdk17
+
+# Jenkins 초기 관리자 비밀번호 저장
+echo "Waiting for Jenkins to initialize..."
+sleep 30 # Jenkins 초기화를 기다림
+docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword > /home/ubuntu/jenkins/initialAdminPassword.txt
+chown ubuntu:ubuntu /home/ubuntu/jenkins/initialAdminPassword.txt
